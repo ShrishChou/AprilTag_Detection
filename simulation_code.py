@@ -125,7 +125,8 @@ class RobotMain(object):
                 return
             self._tcp_speed = 200
             self._tcp_acc = 5000
-            code = self._arm.set_servo_angle(angle=[101.0, -11.1, -56.4, 0.0, 67.5, 24.5],is_radian=False, speed=self._angle_speed, mvacc=self._angle_acc, wait=True, radius=-1.0)
+            start=[100.10417938232422, 100.1002197265625, 600, -180.00000500895632, 0, 0]
+            code = self._arm.set_position(*start,is_radian=False, speed=self._angle_speed, mvacc=self._angle_acc, wait=True, radius=-1.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return
             print("pos",self._arm.get_position(False)[1])
@@ -146,12 +147,12 @@ class RobotMain(object):
                 return
 
             print("*************************************************************************")
-            code,temp_pos=self._arm.get_forward_kinematics(
-                [101.0, -11.1, -56.4, 0.0, 67.5, 24.5],False,False)
-            code = self._arm.set_position(*temp_pos,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
-            print(temp_pos)
-            if not self._check_code(code, 'set_position'):
-                return
+            # code,temp_pos=self._arm.get_forward_kinematics(
+            #     [101.0, -11.1, -56.4, 0.0, 67.5, 24.5],False,False)
+            # code = self._arm.set_position(*temp_pos,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
+            # print(temp_pos)
+            # if not self._check_code(code, 'set_position'):
+            #     return
             print("**********************************************")
             # code,pos_to_move_to=self._arm.get_inverse_kinematics(
             #     temp_pos,False,False)
@@ -171,6 +172,7 @@ class RobotMain(object):
             if not self._check_code(code, 'set_position_aa'):
                 return
             coor=[100.10417938232422, 100.1002197265625, 600, -180.00000500895632, 0, 0]
+
             code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
             if not self._check_code(code, 'set_position_aa'):
                 return

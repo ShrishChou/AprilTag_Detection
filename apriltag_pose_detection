@@ -13,11 +13,11 @@ while True:
     ret, frame = cap.read()
     gray=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     tags=detector.detect(gray)
-    # Inititalize estimator
+    # Inititalize estimator  (Read documentation for Config parameters which differ based on camera) 
     pose_estimator=robotpy_apriltag.AprilTagPoseEstimator(robotpy_apriltag.AprilTagPoseEstimator.Config(0.0772,20,20,20,20))
     # Loop through each tag
     for tag in tags:
-        
+
         # Mark corners
         corners=tag.getCorners((1,2,3,4,5,6,7,8))
         for i in range(3):
@@ -39,7 +39,7 @@ while True:
         coor=(pose.translation().X(),pose.translation().Y(),pose.translation().Z())
         rotate=(pose.rotation().X(),pose.rotation().Y(),pose.rotation().Z())
 
-        # for viewing on screen round each to 3 decimal places
+        # For viewing on screen round each to 3 decimal places
         output_coor= tuple(round(x, 3) for x in coor)
         output_rotate= tuple(round(x, 3) for x in coor)
         cv2.putText ( frame, str(output_coor)+str(output_rotate),(plotcenter[0] - 10, plotcenter[1] - 10),
