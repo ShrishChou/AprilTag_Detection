@@ -1,12 +1,21 @@
 import robotpy_apriltag
 import cv2
+import math
 
-# Code to detect tag and make outlines with pose detection
-
-
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 detector=robotpy_apriltag.AprilTagDetector()
 works=detector.addFamily("tag36h11")
+focal_length_mm = 2.8  # Example value in mm, replace with actual
+sensor_width_mm = 5.376  # Example sensor width in mm, replace with actual
+sensor_height_mm = 4.32  # Example sensor height in mm, replace with actual
+resolution_width_px = 1920  # Replace with actual resolution width
+resolution_height_px = 1080  # Replace with actual resolution height
+
+focal_length_x_px = 1222.696171025563
+focal_length_y_px = 1212.1695904263745
+focal_center_x = 883.3558187170079
+focal_center_y = 542.76052956764
+print(focal_center_x,focal_center_y,focal_length_x_px,focal_length_y_px)
 
 while True:
     # Capture frame-by-frame
@@ -14,7 +23,11 @@ while True:
     gray=cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     tags=detector.detect(gray)
     # Inititalize estimator  (Read documentation for Config parameters which differ based on camera) 
-    pose_estimator=robotpy_apriltag.AprilTagPoseEstimator(robotpy_apriltag.AprilTagPoseEstimator.Config(0.0772,20,20,20,20))
+    pose_estimator=robotpy_apriltag.AprilTagPoseEstimator(robotpy_apriltag.AprilTagPoseEstimator.Config(0.053,
+                                                                                                        focal_length_x_px,
+                                                                                                        focal_length_y_px,
+                                                                                                        focal_center_x,
+                                                                                                        focal_center_y))
     # Loop through each tag
     for tag in tags:
 
@@ -35,15 +48,20 @@ while True:
         
         # Estimate tag pose
         pose=pose_estimator.estimate(tag)
-        print(pose)
-        coor=(pose.translation().X(),pose.translation().Y(),pose.translation().Z())
-        rotate=(pose.rotation().X(),pose.rotation().Y(),pose.rotation().Z())
-
-        # For viewing on screen round each to 3 decimal places
+        coor2=(pose.translation().X(),pose.translation().Y(),pose.translation().Z())
+        coor=tuple()
+        for c in range(3):
+            coor=coor+(coor2[c]*39.3701,)
+        rotate=(math.degrees(pose.rotation().X()),
+                math.degrees(pose.rotation().Y()),
+                math.degrees(pose.rotation().Z()))
+        print("translate ",coor)
+        print("rotate", rotate)
+        # For viewing on screen round each to 3 decimal pl  aces
         output_coor= tuple(round(x, 3) for x in coor)
-        output_rotate= tuple(round(x, 3) for x in coor)
-        cv2.putText ( frame, str(output_coor)+str(output_rotate),(plotcenter[0] - 10, plotcenter[1] - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+        output_rotate= tuple(round(x, 3) for x in rotate)
+        cv2.putText ( frame, str(output_coor)+str(output_rotate),(plotcenter[0] , plotcenter[1] -50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
         
     # Display the resulting frame
     cv2.imshow('AprilTag Detection', frame)

@@ -1,0 +1,80 @@
+import cv2
+import numpy as np
+
+# Camera intrinsic parameters (from calibration)
+focal_length_x = 1222.696171025563
+focal_length_y = 1212.1695904263745
+focal_center_x = 883.3558187170079
+focal_center_y = 542.76052956764
+
+camera_matrix = np.array([
+    [focal_length_x, 0, focal_center_x],
+    [0, focal_length_y, focal_center_y],
+    [0, 0, 1]
+])
+
+dist_coeffs = np.zeros((4, 1))  # Assuming no lens distortion for this example
+
+# Initialize AprilTag detector
+tag_detector = cv2.AprilTagDetector_create(cv2.AprilTagDetectorParams_create())
+
+# Define the 3D coordinates of the AprilTag corners in the world frame
+tag_size = 0.16  # Example tag size in meters
+half_size = tag_size / 2
+object_points = np.array([
+    [-half_size, -half_size, 0],
+    [half_size, -half_size, 0],
+    [half_size, half_size, 0],
+    [-half_size, half_size, 0]
+], dtype=np.float32)
+
+# Open the webcam
+cap = cv2.VideoCapture(0)
+
+while True:
+    # Capture frame-by-frame
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Detect AprilTags
+    detections = tag_detector.detect(gray)
+
+    if len(detections) > 0:
+        for detection in detections:
+            # Get the corners of the detected tag
+            corners = detection.corners.reshape(-1, 2)
+            # Draw the corners on the image for visualization
+            for corner in corners:
+                cv2.circle(frame, tuple(corner.astype(int)), 5, (0, 255, 0), 2)
+            
+            # Estimate the pose of the AprilTag
+            success, rvec, tvec = cv2.solvePnP(object_points, corners, camera_matrix, dist_coeffs)
+
+            if success:
+                # Convert rotation vector to rotation matrix
+                rmat, _ = cv2.Rodrigues(rvec)
+                print("Rotation Matrix:\n", rmat)
+                print("Translation Vector:\n", tvec)
+
+                # The 3D position of the tag in camera coordinates is given by tvec
+                tag_3d_position = tvec.flatten()
+                print("Tag 3D Position (in camera coordinates):", tag_3d_position)
+
+                # Draw the 3D position on the frame
+                text = f"Position: {tag_3d_position}"
+                cv2.putText(frame, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+    # Display the resulting frame
+    cv2.imshow('AprilTag Detection', frame)
+
+    # Break the loop on 'q' key press
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# When everything is done, release the capture
+cap.release()
+cv2.destroyAllWindows()
