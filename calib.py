@@ -92,7 +92,7 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
     mean_error = total_error / len(objpoints)
     print("Mean re-projection error:", mean_error)
     # Load an image to undistort
-    test_image_path = 'images/WIN_20240707_17_29_23_Pro.jpg'  # Path to your test image
+    test_image_path = 'test/WIN_20240709_11_42_23_Pro.jpg'  # Path to your test image
     img = cv2.imread(test_image_path)
 
     # Undistort the image
