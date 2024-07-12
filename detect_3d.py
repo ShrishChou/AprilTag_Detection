@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from pyzbar import pyzbar
 
 # Load calibration data (as before)
 calibration_data = np.load('stereo_calibration.npz')
@@ -16,21 +15,21 @@ proj1 = np.hstack((np.eye(3, 3), np.zeros((3, 1))))
 proj2 = np.hstack((R, T))
 
 def detect_specific_qr_code(image, target_type, target_focus):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    qr_codes = pyzbar.decode(gray)
+    qr_detector = cv2.QRCodeDetector()
+    # Detect QR codes
+    decoded, points, _ = qr_detector.detectAndDecode(image)
     
-    for qr_code in qr_codes:
-        # Get QR code data and position
-        data = qr_code.data.decode('utf-8')
+    if decoded and ':' in decoded:
+        # Parse QR code data
+        data = decoded.strip()
         object_type, focus_mm = data.split(':')
         focus_mm = float(focus_mm)
         
         # Check if this QR code matches our target
         if object_type == target_type and focus_mm == target_focus:
-            # Get QR code center
-            (x, y, w, h) = qr_code.rect
-            center_x = x + w / 2
-            center_y = y + h / 2
+            # Calculate QR code center
+            center_x = np.mean(points[:, 0])
+            center_y = np.mean(points[:, 1])
             
             return (center_x, center_y), object_type, focus_mm
     
@@ -57,8 +56,8 @@ cap1 = cv2.VideoCapture(1)  # Camera 1
 cap2 = cv2.VideoCapture(2)  # Camera 2
 
 # Specify the target QR code
-target_type = "VALVE"
-target_focus = 50.0
+target_type = "Mirror"
+target_focus = 50
 
 print(f"Looking for QR code with Type: {target_type}, Focus: {target_focus}mm")
 

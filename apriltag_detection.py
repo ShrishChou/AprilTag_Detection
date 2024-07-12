@@ -3,7 +3,7 @@ import cv2
 
 # Code to detect tag and make outlines (no pose work)
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(2)
 detector=robotpy_apriltag.AprilTagDetector()
 works=detector.addFamily("tag36h11")
 
