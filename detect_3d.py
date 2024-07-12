@@ -34,23 +34,51 @@ def detect_specific_qr_code(image, target_type, target_focus):
             return (center_x, center_y), object_type, focus_mm
     
     return None, None, None
+def detect_specific_apriltag(image, target_id):
+    # Convert image to grayscale if it's not already
+    if len(image.shape) == 3:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        gray = image
 
+    # Initialize the detector parameters using cv2.aruco module
+    aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_APRILTAG_36h11)
+    parameters = cv2.aruco.DetectorParameters()
+    
+    # Create the ArucoDetector
+    detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+    
+    # Detect AprilTags
+    corners, ids, _ = detector.detectMarkers(gray)
+    
+    if ids is not None and len(ids) > 0:
+        ids = ids.flatten()
+        if target_id in ids:
+            # Find the index of the target_id in ids list
+            index = np.where(ids == target_id)[0][0]
+            
+            # Calculate center of the AprilTag
+            center_x = int(np.mean(corners[index][:, :, 0]))
+            center_y = int(np.mean(corners[index][:, :, 1]))
+            
+            return (center_x, center_y), int(ids[index])
+    
+    return None, None
 def triangulate_point(point1, point2):
-    point1 = np.array(point1).reshape(2, 1)
-    point2 = np.array(point2).reshape(2, 1)
-    
+    point1 = np.array(point1, dtype=np.float32).reshape(1, 1, 2)
+    point2 = np.array(point2, dtype=np.float32).reshape(1, 1, 2)
+
     # Undistort points
-    point1_undistorted = cv2.undistortPoints(point1, mtx1, dist1)
-    point2_undistorted = cv2.undistortPoints(point2, mtx2, dist2)
-    
+    point1_undistorted = cv2.undistortPoints(point1, mtx1, dist1, P=mtx1)
+    point2_undistorted = cv2.undistortPoints(point2, mtx2, dist2, P=mtx2)
+
     # Triangulate
     point_4d = cv2.triangulatePoints(proj1, proj2, point1_undistorted, point2_undistorted)
-    
+
     # Convert from homogeneous coordinates to 3D
     point_3d = point_4d[:3] / point_4d[3]
-    
-    return point_3d.reshape(-1)
 
+    return point_3d.reshape(-1)
 # Main loop for real-time detection
 cap1 = cv2.VideoCapture(1)  # Camera 1
 cap2 = cv2.VideoCapture(2)  # Camera 2
@@ -58,6 +86,7 @@ cap2 = cv2.VideoCapture(2)  # Camera 2
 # Specify the target QR code
 target_type = "Mirror"
 target_focus = 50
+target_id=0
 
 print(f"Looking for QR code with Type: {target_type}, Focus: {target_focus}mm")
 
@@ -69,8 +98,8 @@ while True:
         break
     
     # Detect specific QR code in both frames
-    point1, type1, focus1 = detect_specific_qr_code(frame1, target_type, target_focus)
-    point2, type2, focus2 = detect_specific_qr_code(frame2, target_type, target_focus)
+    point1, id = detect_specific_apriltag(frame1, target_id)
+    point2, id = detect_specific_apriltag(frame2, target_id)
     
     if point1 is not None and point2 is not None:
         # Triangulate 3D position
