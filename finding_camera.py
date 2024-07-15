@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 # Test Camera 1 with MSMF
-cap1 = cv2.VideoCapture(1, cv2.CAP_MSMF) 
+cap1 = cv2.VideoCapture(0, cv2.CAP_MSMF) 
 cap2 = cv2.VideoCapture(2, cv2.CAP_MSMF)  # For Windows MSMF
 def detect_specific_qr_code(image, target_type, target_focus):
     qr_detector = cv2.QRCodeDetector()

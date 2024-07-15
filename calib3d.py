@@ -78,7 +78,7 @@ print(T)
 # Calculate and print baseline
 baseline = np.linalg.norm(T)
 print(f"\nThe baseline distance between cameras is {baseline:.2f} millimeters")
-expected_baseline = 812.8  # 32 inches in mm
+expected_baseline = 165.1  # 32 inches in mm
 scale_factor = expected_baseline / baseline
 print(f"Scale factor: {scale_factor:.4f}")
 
