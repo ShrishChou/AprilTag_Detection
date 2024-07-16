@@ -1,105 +1,118 @@
 import numpy as np
 import cv2
 import glob
+import os
 
-# Chessboard dimensions
-CHESSBOARD_SIZE = (10, 7)  # (width, height) of intersections
-SQUARE_SIZE = 25.0  # Size of a square in millimeters
+# Checkerboard dimensions
+CHECKERBOARD = (10, 7)  # adjust this to match your checkerboard
+square_size = 0.025  # size of square in meters
+
+# Termination criteria
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # Prepare object points
-objp = np.zeros((CHESSBOARD_SIZE[0] * CHESSBOARD_SIZE[1], 3), np.float32)
-objp[:,:2] = np.mgrid[0:CHESSBOARD_SIZE[0], 0:CHESSBOARD_SIZE[1]].T.reshape(-1,2) * SQUARE_SIZE
+objp = np.zeros((CHECKERBOARD[0] * CHECKERBOARD[1], 3), np.float32)
+objp[:, :2] = np.mgrid[0:CHECKERBOARD[0], 0:CHECKERBOARD[1]].T.reshape(-1, 2)
+objp *= square_size
 
 # Arrays to store object points and image points from all images
-objpoints = []  # 3d points in real world space
-imgpoints1 = []  # 2d points in image plane for camera 1
-imgpoints2 = []  # 2d points in image plane for camera 2
+objpoints = []  # 3D points in real world space
+imgpoints_left = []  # 2D points in image plane for left camera
+imgpoints_right = []  # 2D points in image plane for right camera
 
-# Get lists of calibration images
-images1 = glob.glob('calibration_images/camera1/*.jpg')
-images2 = glob.glob('calibration_images/camera2/*.jpg')
+# Get image files
+images_left = glob.glob('calibration_images/camera2/*.jpg')
+images_right = glob.glob('calibration_images/camera1/*.jpg')
 
-# Ensure we have the same number of images for both cameras
-assert len(images1) == len(images2), "Number of images from both cameras must be the same"
+assert len(images_left) == len(images_right), "Number of left and right images don't match"
 
-for img1_path, img2_path in zip(images1, images2):
-    img1 = cv2.imread(img1_path)
-    img2 = cv2.imread(img2_path)
-    gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-    gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+for i, (img_left, img_right) in enumerate(zip(images_left, images_right)):
+    left = cv2.imread(img_left)
+    right = cv2.imread(img_right)
+    gray_left = cv2.cvtColor(left, cv2.COLOR_BGR2GRAY)
+    gray_right = cv2.cvtColor(right, cv2.COLOR_BGR2GRAY)
 
-    # Find the chessboard corners
-    ret1, corners1 = cv2.findChessboardCorners(gray1, CHESSBOARD_SIZE, None)
-    ret2, corners2 = cv2.findChessboardCorners(gray2, CHESSBOARD_SIZE, None)
+    # Find the chess board corners
+    ret_left, corners_left = cv2.findChessboardCorners(gray_left, CHECKERBOARD, None)
+    ret_right, corners_right = cv2.findChessboardCorners(gray_right, CHECKERBOARD, None)
 
-    # If found, add object points, image points
-    if ret1 and ret2:
+    if ret_left and ret_right:
         objpoints.append(objp)
-        imgpoints1.append(corners1)
-        imgpoints2.append(corners2)
+        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (11, 11), (-1, -1), criteria)
+        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (11, 11), (-1, -1), criteria)
+        imgpoints_left.append(corners2_left)
+        imgpoints_right.append(corners2_right)
 
-        # Draw and display the corners (optional)
-        cv2.drawChessboardCorners(img1, CHESSBOARD_SIZE, corners1, ret1)
-        cv2.drawChessboardCorners(img2, CHESSBOARD_SIZE, corners2, ret2)
-        cv2.imshow('img1', img1)
-        cv2.imshow('img2', img2)
+        # Draw and display the corners
+        cv2.drawChessboardCorners(left, CHECKERBOARD, corners2_left, ret_left)
+        cv2.drawChessboardCorners(right, CHECKERBOARD, corners2_right, ret_right)
+        cv2.imshow('Left Image', left)
+        cv2.imshow('Right Image', right)
         cv2.waitKey(500)
 
 cv2.destroyAllWindows()
 
-# Calibrate each camera individually
-ret1, mtx1, dist1, rvecs1, tvecs1 = cv2.calibrateCamera(objpoints, imgpoints1, gray1.shape[::-1], None, None)
-ret2, mtx2, dist2, rvecs2, tvecs2 = cv2.calibrateCamera(objpoints, imgpoints2, gray2.shape[::-1], None, None)
+# Calibrate left camera
+ret_left, mtx_left, dist_left, rvecs_left, tvecs_left = cv2.calibrateCamera(objpoints, imgpoints_left, gray_left.shape[::-1], None, None)
 
-print("Camera 1 Matrix:")
-print(mtx1)
-print("\nCamera 1 Distortion Coefficients:")
-print(dist1)
+# Calibrate right camera
+ret_right, mtx_right, dist_right, rvecs_right, tvecs_right = cv2.calibrateCamera(objpoints, imgpoints_right, gray_right.shape[::-1], None, None)
 
-print("\nCamera 2 Matrix:")
-print(mtx2)
-print("\nCamera 2 Distortion Coefficients:")
-print(dist2)
+# Validate the calibration by checking the reprojection error
+mean_error_left = 0
+mean_error_right = 0
 
-# Perform stereo calibration
-flags = cv2.CALIB_FIX_INTRINSIC
-criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-5)
+for i in range(len(objpoints)):
+    imgpoints2_left, _ = cv2.projectPoints(objpoints[i], rvecs_left[i], tvecs_left[i], mtx_left, dist_left)
+    error_left = cv2.norm(imgpoints_left[i], imgpoints2_left, cv2.NORM_L2) / len(imgpoints2_left)
+    mean_error_left += error_left
 
-retStereo, newCameraMatrix1, dist1, newCameraMatrix2, dist2, R, T, E, F = cv2.stereoCalibrate(
-    objpoints, imgpoints1, imgpoints2, 
-    mtx1, dist1, mtx2, dist2, 
-    gray1.shape[::-1], criteria=criteria, flags=flags)
+    imgpoints2_right, _ = cv2.projectPoints(objpoints[i], rvecs_right[i], tvecs_right[i], mtx_right, dist_right)
+    error_right = cv2.norm(imgpoints_right[i], imgpoints2_right, cv2.NORM_L2) / len(imgpoints2_right)
+    mean_error_right += error_right
 
+mean_error_left /= len(objpoints)
+mean_error_right /= len(objpoints)
+
+print(f"Reprojection error for left camera: {mean_error_left}")
+print(f"Reprojection error for right camera: {mean_error_right}")
+
+# Stereo calibration
+flags = 0
+flags |= cv2.CALIB_FIX_INTRINSIC
+criteria_stereo = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+
+# This step is performed to transformation between the two cameras and calculate Essential and Fundamental matrices
+retStereo, newCameraMatrixL, distL, newCameraMatrixR, distR, rot, trans, essentialMatrix, fundamentalMatrix = cv2.stereoCalibrate(
+    objpoints, imgpoints_left, imgpoints_right,
+    mtx_left, dist_left,
+    mtx_right, dist_right,
+    gray_left.shape[::-1], criteria_stereo, flags)
+
+print("Intrinsic Matrix Left:")
+print(mtx_left)
+print("\nDistortion Coefficients Left:")
+print(dist_left)
+print("\nIntrinsic Matrix Right:")
+print(mtx_right)
+print("\nDistortion Coefficients Right:")
+print(dist_right)
 print("\nRotation Matrix:")
-print(R)
+print(rot)
 print("\nTranslation Vector:")
-print(T)
-
-# Calculate and print baseline
-baseline = np.linalg.norm(T)
-print(f"\nThe baseline distance between cameras is {baseline:.2f} millimeters")
-expected_baseline = 165.1  # 32 inches in mm
-scale_factor = expected_baseline / baseline
-print(f"Scale factor: {scale_factor:.4f}")
-
-
-print("\nOriginal Translation Vector:")
-print(T)
-
+print(trans)
 
 # Save the calibration results
-np.savez('stereo_calibration.npz', 
-         mtx1=newCameraMatrix1, dist1=dist1, 
-         mtx2=newCameraMatrix2, dist2=dist2, 
-         R=R, T=T, E=E, F=F, baseline=baseline)
+calibration_data = {
+    'mtx1': mtx_left,
+    'dist1': dist_left,
+    'mtx2': mtx_right,
+    'dist2': dist_right,
+    'R': rot,
+    'T': trans,
+    'E': essentialMatrix,
+    'F': fundamentalMatrix
+}
 
-print("\nCalibration complete. Results saved to 'stereo_calibration.npz'")
-
-# Optional: Compute reprojection error
-mean_error = 0
-for i in range(len(objpoints)):
-    imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs1[i], tvecs1[i], mtx1, dist1)
-    error = cv2.norm(imgpoints1[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
-    mean_error += error
-
-print(f"\nTotal average reprojection error: {mean_error/len(objpoints):.5f}")
+np.savez('stereo_calibration.npz', **calibration_data)
+print("\nCalibration data saved to 'stereo_calibration.npz'")

@@ -22,10 +22,9 @@ objpoints = []  # 3D points in real world space
 imgpoints = []  # 2D points in image plane
 
 # Path to the images directory
-image_directory = os.path.join('images', '*.jpg')
 
 # Load calibration images from the directory
-images = glob.glob(image_directory)
+images = glob.glob('calibration_images/camera1/*.jpg')
 
 # Check if images were found
 if not images:
@@ -92,7 +91,7 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
     mean_error = total_error / len(objpoints)
     print("Mean re-projection error:", mean_error)
     # Load an image to undistort
-    test_image_path = 'test/WIN_20240709_11_42_23_Pro.jpg'  # Path to your test image
+    test_image_path = 'calibration_images/camera1/WIN_20240715_14_33_48_Pro.jpg'  # Path to your test image
     img = cv2.imread(test_image_path)
 
     # Undistort the image
@@ -101,8 +100,8 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
     undistorted_img = cv2.undistort(img, mtx, dist, None, new_camera_mtx)
 
     # Crop the image based on the ROI (Region of Interest)
-    x, y, w, h = roi
-    undistorted_img = undistorted_img[y:y+h, x:x+w]
+    # x, y, w, h = roi
+    # undistorted_img = undistorted_img[y:y+h, x:x+w]
 
     # Display the original and undistorted images
     cv2.imshow('Original Image', img)
@@ -112,3 +111,5 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
 else:
     print("Not enough valid image points for calibration.")
 
+images1 = glob.glob('calibration_images/camera1/*.jpg')
+images2 = glob.glob('calibration_images/camera2/*.jpg')

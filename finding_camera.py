@@ -3,6 +3,7 @@ import numpy as np
 # Test Camera 1 with MSMF
 cap1 = cv2.VideoCapture(0, cv2.CAP_MSMF) 
 cap2 = cv2.VideoCapture(2, cv2.CAP_MSMF)  # For Windows MSMF
+count=1
 def detect_specific_qr_code(image, target_type, target_focus):
     qr_detector = cv2.QRCodeDetector()
     # Detect QR codes
@@ -67,12 +68,18 @@ while True:
         break
     cv2.imshow('Camera 1', frame1)
     cv2.imshow('Camera 2', frame2)
-    one=detect_specific_apriltag(frame1,0)
-    two=detect_specific_apriltag(frame2,0)
-    if one  != (None,None):
-        print(one)
-    if two  != (None,None):
-        print(two)
+    if cv2.waitKey(1) & 0xFF == ord('a'):
+        filename1 = 'calibration_images/camera1/right'+str(count)+'.jpg'
+        cv2.imwrite(filename1, frame1) 
+        filename2 = 'calibration_images/camera2/left'+str(count)+'.jpg'
+        cv2.imwrite(filename2, frame2) 
+        count+=1
+    # one=detect_specific_apriltag(frame1,0)
+    # two=detect_specific_apriltag(frame2,0)
+    # if one  != (None,None):
+    #     print(one)
+    # if two  != (None,None):
+    #     print(two)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
