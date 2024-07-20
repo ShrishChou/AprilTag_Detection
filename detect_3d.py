@@ -2,11 +2,13 @@ import cv2
 import numpy as np
 
 # Load calibration data (as before)
-calibration_data = np.load('stereo_calibration.npz')
-mtx1 = calibration_data['mtx1']
-dist1 = calibration_data['dist1']
-mtx2 = calibration_data['mtx2']
-dist2 = calibration_data['dist2']
+intrinsics_left = np.load('intrinsics_left.npz')
+intrinsics_right = np.load('intrinsics_right.npz')
+calibration_data=np.load('stereo_calibration.npz')
+mtx1 = intrinsics_left['mtx_left']
+dist1 = intrinsics_left['dist_left']
+mtx2 = intrinsics_right['mtx_right']
+dist2 = intrinsics_right['dist_right']
 R = calibration_data['R']
 T = calibration_data['T']
 # At the beginning of your script, after loading the calibration data:
@@ -79,10 +81,14 @@ def calculate_reprojection_error(point_3d, point1, point2, mtx1, dist1, mtx2, di
     error1 = np.linalg.norm(np.array(point1) - reprojected_point1.squeeze())
     error2 = np.linalg.norm(np.array(point2) - reprojected_point2.squeeze())
 
-    return error1, error2
+    return error1, error2   
 # Main loop for real-time detection
-cap1 = cv2.VideoCapture(0)  # Camera 1
-cap2 = cv2.VideoCapture(2)  # Camera 2
+cap1 = cv2.VideoCapture(0,cv2.CAP_MSMF) 
+cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap2 = cv2.VideoCapture(2,cv2.CAP_MSMF)  # For Windows MSMF
+cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
 # Specify the target ArUco tag ID
 target_id = 4  # Change this to your desired tag ID

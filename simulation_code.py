@@ -36,7 +36,7 @@ class RobotMain(object):
         self._ignore_exit_state = False
         self._tcp_speed = 100
         self._tcp_acc = 2000
-        self._angle_speed = 20
+        self._angle_speed = 100
         self._angle_acc = 500
         self._vars = {}
         self._funcs = {}
@@ -125,57 +125,30 @@ class RobotMain(object):
                 return
             self._tcp_speed = 200
             self._tcp_acc = 5000
-            start=[100.10417938232422, 100.1002197265625, 600, -180.00000500895632, 0, 0]
-            code = self._arm.set_position(*start,is_radian=False, speed=self._angle_speed, mvacc=self._angle_acc, wait=True, radius=-1.0)
+            t1 = time.monotonic()
+
+            code=self._arm.set_servo_angle(angle=[0,0,0,0,0,-90,0],is_radian=False)
             if not self._check_code(code, 'set_servo_angle'):
                 return
-            print("pos",self._arm.get_position(False)[1])
+            
 
-            code = self._arm.set_gripper_position(800, wait=True, speed=5000, auto_enable=True)
-            if not self._check_code(code, 'set_gripper_position'):
+            coor=[280.10417938232422, 412.1002197265625, 170, -180.00000500895632, 0, 0]
+            pickup(self,coor)
+
+            coor=[-280.10417938232422, 412.1002197265625, 170, -180.00000500895632, 0, 0]
+            drop(self,coor)
+            
+            coor=[280.10417938232422, -412.1002197265625, 170, -180.00000500895632, 0, 0]
+            pickup(self,coor)
+
+            coor=[-280.10417938232422, 412.1002197265625, 180, -180.00000500895632, 0, 0]
+            drop(self,coor)
+            code=self._arm.set_servo_angle(angle=[0,0,0,0,0,-90,0],is_radian=False,speed=100)
+            if not self._check_code(code, 'set_servo_angle'):
                 return
             
-            if not self.is_alive:
-                return
-            t1 = time.monotonic()
-            code = self._arm.set_counter_increase()
-            if not self._check_code(code, 'set_counter_increase'):
-                return
-            # Set TCP payload as the xArm Gripper
-            code = self._arm.set_tcp_load(0.82, [0, 0, 48])
-            if not self._check_code(code, 'set_tcp_load'):
-                return
+            # validate(self,coor)
 
-            print("*************************************************************************")
-            # code,temp_pos=self._arm.get_forward_kinematics(
-            #     [101.0, -11.1, -56.4, 0.0, 67.5, 24.5],False,False)
-            # code = self._arm.set_position(*temp_pos,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
-            # print(temp_pos)
-            # if not self._check_code(code, 'set_position'):
-            #     return
-            print("**********************************************")
-            # code,pos_to_move_to=self._arm.get_inverse_kinematics(
-            #     temp_pos,False,False)
-            coor=[280.10417938232422, 412.1002197265625, 400.00927734375, -180.00000500895632, 0, 0]
-            # print(pos_to_move_to)
-            code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
-            if not self._check_code(code, 'set_position'):
-                return
-            code=self._arm.set_pause_time(2,wait=True)
-            coor=[280.10417938232422, 412.1002197265625, 100, -180.00000500895632, 0, 0]
-            code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
-            if not self._check_code(code, 'set_position_aa'):
-                return
-
-            coor=[280.10417938232422, 412.1002197265625, 400, -180.00000500895632, 0, 0]
-            code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
-            if not self._check_code(code, 'set_position_aa'):
-                return
-            coor=[100.10417938232422, 100.1002197265625, 600, -180.00000500895632, 0, 0]
-
-            code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
-            if not self._check_code(code, 'set_position_aa'):
-                return
             interval = time.monotonic() - t1
             if interval < 0.01:
                 time.sleep(0.01 - interval)
@@ -188,7 +161,99 @@ class RobotMain(object):
             if hasattr(self._arm, 'release_count_changed_callback'):
                 self._arm.release_count_changed_callback(self._count_changed_callback)
 
+def pickup(self,coor):
+    highcoor=coor[:2]+[400]+coor[3:]
+    code = self._arm.set_gripper_position(800, wait=True, speed=5000, auto_enable=True)
+    if not self._check_code(code, 'set_gripper_position'):
+        return
+    x=coor[0]
+    y=coor[1]
+    new_angle=math.atan2(y,x)/math.pi*180
 
+    print("***************************",new_angle,coor)
+    code=self._arm.set_servo_angle(servo_id=1,wait=True,angle=new_angle,is_radian=False,speed=70)
+    if not self._check_code(code, 'set_servo_angle'):
+        return
+    code = self._arm.set_position_aa(highcoor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
+    if not self._check_code(code, 'set_position'):
+        return
+
+    code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
+    if not self._check_code(code, 'set_position'):
+        return
+    code = self._arm.set_gripper_position(400, wait=True, speed=5000, auto_enable=True)
+    if not self._check_code(code, 'set_gripper_position'):
+        return
+    code = self._arm.set_position_aa(highcoor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
+    if not self._check_code(code, 'set_position'):
+        return
+    code=self._arm.set_servo_angle(angle=[new_angle,0,0,0,0,-90,0],is_radian=False)
+    if not self._check_code(code, 'set_servo_angle'):
+        return
+    return
+
+def drop(self,coor):
+    highcoor=coor[:2]+[400]+coor[3:]
+    x=coor[0]
+    y=coor[1]
+    new_angle=math.atan2(y,x)/math.pi*180
+    code=self._arm.set_servo_angle(servo_id=1,wait=True,angle=new_angle,is_radian=False,speed=70)
+    if not self._check_code(code, 'set_servo_angle'):
+        return
+    code = self._arm.set_position_aa(highcoor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
+    if not self._check_code(code, 'set_position'):
+        return
+
+    code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
+    if not self._check_code(code, 'set_position'):
+        return
+    code = self._arm.set_gripper_position(800, wait=True, speed=5000, auto_enable=True)
+    if not self._check_code(code, 'set_gripper_position'):
+        return
+    code = self._arm.set_position_aa(highcoor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
+    if not self._check_code(code, 'set_position'):
+        return
+    code=self._arm.set_servo_angle(angle=[new_angle,0,0,0,0,-90,0],is_radian=False)
+    if not self._check_code(code, 'set_servo_angle'):
+        return
+    return
+def validate(self,coor):
+    x=coor[0]
+    y=coor[1]
+    code,val=self._arm.get_position_aa(is_radian=False)
+    x_curr=val[0]
+    y_curr=val[1]
+    quad=0
+    quadcurr=0
+    if x>=0 and y>=0:
+        quad=1
+    elif x<=0 and y>=0:
+        quad=2
+    elif x<=0 and y<=0:
+        quad=3
+    else:
+        quad=4
+
+    if x_curr>=0 and y_curr>=0:
+        quad_curr=1
+    elif x_curr<=0 and y_curr>=0:
+        quad_curr=2
+    elif x_curr<=0 and y_curr<=0:
+        quad_curr=3
+    else:
+        quad_curr=4
+
+    code,angle=self._arm.get_servo_angle(servo_id=1,is_radian=False)
+    print("angle",angle)
+    new_angle=angle+(quad-quadcurr)*90
+    new_angle=new_angle%360
+    print("new_angle",new_angle)
+    code=self._arm.set_servo_angle(servo_id=1,wait=True,angle=new_angle,is_radian=False)
+
+    code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
+    if not self._check_code(code, 'set_position'):
+        return
+    return
 if __name__ == '__main__':
     RobotMain.pprint('xArm-Python-SDK Version:{}'.format(version.__version__))
     arm = XArmAPI('172.17.0.2', baud_checkset=False)

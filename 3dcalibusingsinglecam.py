@@ -3,17 +3,16 @@ import cv2
 import glob
 
 # Known intrinsic parameters
-mtx_left = np.array([[701.80584728, 0., 994.67088708],
-                     [0., 702.43152767, 582.99627072],
-                     [0., 0., 1.]])
+mtx_left = np.array([[2.58355258e+03, 0.00000000e+00, 3.35189421e+02],
+ [0.00000000e+00, 2.57520269e+03, 1.97684233e+02],
+ [0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
 
-dist_left = np.array([[-0.15911852, 0.03427091, -0.00108623, 0.00107475, -0.00460892]])
+dist_left = np.array([[-1.18098296e+01,  2.26853894e+02, -6.22676404e-02,  7.86331702e-02,
+  -1.42272959e+03]])
 
-mtx_right = np.array([[701.80584728, 0., 994.67088708],  # Assuming same as left for now
-                      [0., 702.43152767, 582.99627072],
-                      [0., 0., 1.]])
+mtx_right = mtx_left
 
-dist_right = np.array([[-0.15911852, 0.03427091, -0.00108623, 0.00107475, -0.00460892]])  # Assuming same as left for now
+dist_right = dist_left
 
 # Checkerboard dimensions
 CHECKERBOARD = (10, 7)  # adjust this to match your checkerboard
@@ -50,8 +49,8 @@ for i, (img_left, img_right) in enumerate(zip(images_left, images_right)):
 
     if ret_left and ret_right:
         objpoints.append(objp)
-        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (11, 11), (-1, -1), criteria)
-        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (11, 11), (-1, -1), criteria)
+        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (8, 8), (-1, -1), criteria)
+        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (8, 8), (-1, -1), criteria)
         imgpoints_left.append(corners2_left)
         imgpoints_right.append(corners2_right)
 

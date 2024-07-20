@@ -1,9 +1,15 @@
 import cv2
 import numpy as np
 # Test Camera 1 with MSMF
-cap1 = cv2.VideoCapture(0, cv2.CAP_MSMF) 
-cap2 = cv2.VideoCapture(2, cv2.CAP_MSMF)  # For Windows MSMF
-count=1
+
+cap1 = cv2.VideoCapture(0) 
+cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+cap2 = cv2.VideoCapture(2)  # For Windows MSMF
+cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+leftcount=16
+rightcount=1
 def detect_specific_qr_code(image, target_type, target_focus):
     qr_detector = cv2.QRCodeDetector()
     # Detect QR codes
@@ -66,14 +72,23 @@ while True:
     if not ret2:
         print("Error: Could not read frame from camera 2.")
         break
+    
+    # qqqqqqqqqq
     cv2.imshow('Camera 1', frame1)
     cv2.imshow('Camera 2', frame2)
-    if cv2.waitKey(1) & 0xFF == ord('a'):
-        filename1 = 'calibration_images/camera1/right'+str(count)+'.jpg'
-        cv2.imwrite(filename1, frame1) 
-        filename2 = 'calibration_images/camera2/left'+str(count)+'.jpg'
+    # if cv2.waitKey(1) & 0xFF == ord('a'):
+    #     filename1 = 'leftcamindividual/left'+str(rightcount)+'.jpg'
+    #     cv2.imwrite(filename1, frame1) 
+    #     rightcount+=1
+        # filename2 = 'calibration_images/camera2/left'+str(leftcount)+'.jpg'
+        # cv2.imwrite(filename2, frame2) 
+        # leftcount+=1
+    if cv2.waitKey(1) & 0xFF == ord('b'):
+        # filename2 = 'calibration_images/camera2/left'+str(leftcount)+'.jpg'
+        filename2 = 'rightcamindividual/right'+str(leftcount)+'.jpg'
+
         cv2.imwrite(filename2, frame2) 
-        count+=1
+        leftcount+=1
     # one=detect_specific_apriltag(frame1,0)
     # two=detect_specific_apriltag(frame2,0)
     # if one  != (None,None):

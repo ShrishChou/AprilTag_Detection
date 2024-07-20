@@ -24,7 +24,7 @@ imgpoints = []  # 2D points in image plane
 # Path to the images directory
 
 # Load calibration images from the directory
-images = glob.glob('calibration_images/camera1/*.jpg')
+images = glob.glob('rightcamindividual/*.jpg')
 
 # Check if images were found
 if not images:
@@ -34,11 +34,14 @@ else:
 
 for image_file in images:
     img = cv2.imread(image_file)
-    
-    # Check if the image was loaded properly
-    if img is None:
-        print(f"Error loading image: {image_file}")
-        continue
+    if img is not None:
+        print(f"Image dimensions: {img.shape[1]}x{img.shape[0]}")
+    else:
+        print("Error loading image")
+        # Check if the image was loaded properly
+    # if img is None:
+    #     print(f"Error loading image: {image_file}")
+    #     continue
     
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
@@ -49,13 +52,13 @@ for image_file in images:
         objpoints.append(objp)
         
         # Refine the corner positions
-        corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
+        corners2 = cv2.cornerSubPix(gray, corners, (8, 8), (-1, -1), criteria)
         imgpoints.append(corners2)
         
         # Draw and display the corners
         cv2.drawChessboardCorners(img, chessboard_size, corners2, ret)
         cv2.imshow('Chessboard', img)
-        cv2.waitKey(500)  # Display each image for 500 ms
+        cv2.waitKey(5000)  # Display each image for 500 ms
     else:
         print(f"Chessboard corners not found in image: {image_file}")
         # Display the image to see why corners were not detected
@@ -91,7 +94,7 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
     mean_error = total_error / len(objpoints)
     print("Mean re-projection error:", mean_error)
     # Load an image to undistort
-    test_image_path = 'calibration_images/camera1/WIN_20240715_14_33_48_Pro.jpg'  # Path to your test image
+    test_image_path = 'calibration_images/camera2/left1.jpg'  # Path to your test image
     img = cv2.imread(test_image_path)
 
     # Undistort the image
@@ -100,8 +103,8 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
     undistorted_img = cv2.undistort(img, mtx, dist, None, new_camera_mtx)
 
     # Crop the image based on the ROI (Region of Interest)
-    # x, y, w, h = roi
-    # undistorted_img = undistorted_img[y:y+h, x:x+w]
+    x, y, w, h = roi
+    undistorted_img = undistorted_img[y:y+h, x:x+w]
 
     # Display the original and undistorted images
     cv2.imshow('Original Image', img)
@@ -110,6 +113,7 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
     cv2.destroyAllWindows()
 else:
     print("Not enough valid image points for calibration.")
-
+# np.savez('intrinsics_left.npz', mtx_left=mtx, dist_left=dist)
+np.savez('intrinsics_right.npz', mtx_right=mtx, dist_right=dist)
 images1 = glob.glob('calibration_images/camera1/*.jpg')
 images2 = glob.glob('calibration_images/camera2/*.jpg')

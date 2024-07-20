@@ -21,14 +21,16 @@ imgpoints_left = []  # 2D points in image plane for left camera
 imgpoints_right = []  # 2D points in image plane for right camera
 
 # Get image files
-images_left = glob.glob('calibration_images/camera2/*.jpg')
-images_right = glob.glob('calibration_images/camera1/*.jpg')
+images_left = glob.glob('calibration_images/camera1/*.jpg')
+images_right = glob.glob('calibration_images/camera2/*.jpg')
 
 assert len(images_left) == len(images_right), "Number of left and right images don't match"
 
 for i, (img_left, img_right) in enumerate(zip(images_left, images_right)):
     left = cv2.imread(img_left)
     right = cv2.imread(img_right)
+    left_original = left.copy()  # Create a copy of the original image
+    right_original = right.copy()  # Create a copy of the original image
     gray_left = cv2.cvtColor(left, cv2.COLOR_BGR2GRAY)
     gray_right = cv2.cvtColor(right, cv2.COLOR_BGR2GRAY)
 
@@ -38,17 +40,24 @@ for i, (img_left, img_right) in enumerate(zip(images_left, images_right)):
 
     if ret_left and ret_right:
         objpoints.append(objp)
-        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (11, 11), (-1, -1), criteria)
-        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (11, 11), (-1, -1), criteria)
+        # Use a smaller window size (5,5) instead of (11,11)
+        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (5, 5), (-1, -1), criteria)
+        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (5, 5), (-1, -1), criteria)
         imgpoints_left.append(corners2_left)
         imgpoints_right.append(corners2_right)
 
-        # Draw and display the corners
-        cv2.drawChessboardCorners(left, CHECKERBOARD, corners2_left, ret_left)
-        cv2.drawChessboardCorners(right, CHECKERBOARD, corners2_right, ret_right)
-        cv2.imshow('Left Image', left)
-        cv2.imshow('Right Image', right)
-        cv2.waitKey(500)
+        # Draw the corners on copies of the original images
+        left_corners = left_original.copy()
+        right_corners = right_original.copy()
+        cv2.drawChessboardCorners(left_corners, CHECKERBOARD, corners2_left, ret_left)
+        cv2.drawChessboardCorners(right_corners, CHECKERBOARD, corners2_right, ret_right)
+
+        # Display the original images and the images with corners
+        cv2.imshow('Left Image Original', left_original)
+        cv2.imshow('Right Image Original', right_original)
+        cv2.imshow('Left Image Corners', left_corners)
+        cv2.imshow('Right Image Corners', right_corners)
+        cv2.waitKey(5000)
 
 cv2.destroyAllWindows()
 
