@@ -132,17 +132,17 @@ class RobotMain(object):
                 return
             
 
-            coor=[280.10417938232422, 412.1002197265625, 170, -180.00000500895632, 0, 0]
+            coor=[280.10417938232422, 412.1002197265625, 280, -180.00000500895632, 0, 0]
             pickup(self,coor)
 
-            coor=[-280.10417938232422, 412.1002197265625, 170, -180.00000500895632, 0, 0]
+            coor=[-280.10417938232422, 412.1002197265625, 280, -180.00000500895632, 0, 0]
             drop(self,coor)
             
-            coor=[280.10417938232422, -412.1002197265625, 170, -180.00000500895632, 0, 0]
-            pickup(self,coor)
+            # coor=[280.10417938232422, -412.1002197265625, 170, -180.00000500895632, 0, 0]
+            # pickup(self,coor)
 
-            coor=[-280.10417938232422, 412.1002197265625, 180, -180.00000500895632, 0, 0]
-            drop(self,coor)
+            # coor=[-280.10417938232422, 412.1002197265625, 180, -180.00000500895632, 0, 0]
+            # drop(self,coor)
             code=self._arm.set_servo_angle(angle=[0,0,0,0,0,-90,0],is_radian=False,speed=100)
             if not self._check_code(code, 'set_servo_angle'):
                 return
@@ -181,7 +181,7 @@ def pickup(self,coor):
     code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
     if not self._check_code(code, 'set_position'):
         return
-    code = self._arm.set_gripper_position(400, wait=True, speed=5000, auto_enable=True)
+    code = self._arm.set_gripper_position(150, wait=True, speed=5000, auto_enable=True)
     if not self._check_code(code, 'set_gripper_position'):
         return
     code = self._arm.set_position_aa(highcoor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)

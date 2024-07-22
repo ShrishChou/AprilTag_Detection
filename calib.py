@@ -6,6 +6,7 @@ import os
 # Define the chessboard size (number of inner corners per a chessboard row and column)
 chessboard_size = (10, 7)
 
+
 # Define the size of a square on your chessboard in millimeters
 square_size = 25  # Example: 25 mm
 
@@ -35,6 +36,8 @@ else:
 for image_file in images:
     img = cv2.imread(image_file)
     if img is not None:
+        # img = cv2.resize(img, (3840, 2160))
+
         print(f"Image dimensions: {img.shape[1]}x{img.shape[0]}")
     else:
         print("Error loading image")
@@ -52,18 +55,20 @@ for image_file in images:
         objpoints.append(objp)
         
         # Refine the corner positions
-        corners2 = cv2.cornerSubPix(gray, corners, (8, 8), (-1, -1), criteria)
+        corners2 = cv2.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
         imgpoints.append(corners2)
         
         # Draw and display the corners
         cv2.drawChessboardCorners(img, chessboard_size, corners2, ret)
+        cv2.namedWindow('Chessboard', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('Chessboard', 3840, 2160)  # Adjust to your screen size
         cv2.imshow('Chessboard', img)
-        cv2.waitKey(5000)  # Display each image for 500 ms
+        cv2.waitKey(200)  # Display each image for 500 ms
     else:
         print(f"Chessboard corners not found in image: {image_file}")
         # Display the image to see why corners were not detected
         cv2.imshow('Chessboard', img)
-        cv2.waitKey(500)
+        cv2.waitKey(100)
         
 cv2.destroyAllWindows()
 
@@ -94,7 +99,7 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
     mean_error = total_error / len(objpoints)
     print("Mean re-projection error:", mean_error)
     # Load an image to undistort
-    test_image_path = 'calibration_images/camera2/left1.jpg'  # Path to your test image
+    test_image_path = 'rightcamindividual/WIN_20240722_13_28_06_Pro.jpg'  # Path to your test image
     img = cv2.imread(test_image_path)
 
     # Undistort the image
@@ -107,8 +112,13 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
     undistorted_img = undistorted_img[y:y+h, x:x+w]
 
     # Display the original and undistorted images
-    cv2.imshow('Original Image', img)
+    cv2.namedWindow('Original', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('Original', 3840, 2160)  # Adjust to your screen size
+    cv2.imshow('Original', img)
+    cv2.namedWindow('Undistorted Image', cv2.WINDOW_NORMAL)
+    cv2.resizeWindow('Undistorted Image', 3840, 2160)  # Adjust to your screen size
     cv2.imshow('Undistorted Image', undistorted_img)
+    # cv2.imshow('Undistorted Image', undistorted_img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 else:

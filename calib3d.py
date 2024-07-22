@@ -41,8 +41,8 @@ for i, (img_left, img_right) in enumerate(zip(images_left, images_right)):
     if ret_left and ret_right:
         objpoints.append(objp)
         # Use a smaller window size (5,5) instead of (11,11)
-        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (5, 5), (-1, -1), criteria)
-        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (5, 5), (-1, -1), criteria)
+        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (11, 11), (-1, -1), criteria)
+        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (11, 11), (-1, -1), criteria)
         imgpoints_left.append(corners2_left)
         imgpoints_right.append(corners2_right)
 
@@ -53,11 +53,18 @@ for i, (img_left, img_right) in enumerate(zip(images_left, images_right)):
         cv2.drawChessboardCorners(right_corners, CHECKERBOARD, corners2_right, ret_right)
 
         # Display the original images and the images with corners
+        # cv2.namedWindow('Left Image Original', cv2.WINDOW_NORMAL)
+        # cv2.resizeWindow('Left Image Original', 3840, 2160)  # Adjust to your screen size
+        # cv2.imshow('Left Image Original', left_original)
+        # cv2.namedWindow('Right Image Original', cv2.WINDOW_NORMAL)
+        # cv2.resizeWindow('Right Image Original', 3840, 2160)  # Adjust to your screen size
+        # cv2.imshow('Right Image Original', right_original)
+        
         cv2.imshow('Left Image Original', left_original)
         cv2.imshow('Right Image Original', right_original)
         cv2.imshow('Left Image Corners', left_corners)
         cv2.imshow('Right Image Corners', right_corners)
-        cv2.waitKey(5000)
+        cv2.waitKey(500)
 
 cv2.destroyAllWindows()
 
