@@ -1,48 +1,68 @@
 import cv2
 import numpy as np
 
-# [Keep the existing code for loading calibration data and setting up cameras]
+# Load calibration data
+intrinsics_left = np.load('intrinsics_left.npz')
+intrinsics_right = np.load('intrinsics_right.npz')
+calibration_data = np.load('stereo_calibration.npz')
+mtx1 = calibration_data['mtx1']
+dist1 = calibration_data['dist1']
+mtx2 = calibration_data['mtx2']
+dist2 = calibration_data['dist2']
+R = calibration_data['R']
+T = calibration_data['T']
 
-def detect_aruco(image, target_id):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
-    # Create the ArucoDetector
-    detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
-    
-    # Detect ArUco markers
-    corners, ids, _ = detector.detectMarkers(gray)
-    
-    if ids is not None and len(ids) > 0:
-        ids = ids.flatten()
-        
-        if target_id in ids:
-            index = np.where(ids == target_id)[0][0]
-            
-            # Return the corners of the ArUco marker
-            return corners[index][0], int(ids[index])
-    
-    return None, None
+# Compute projection matrices
+proj1 = mtx1 @ np.hstack((np.eye(3), np.zeros((3, 1))))
+proj2 = mtx2 @ np.hstack((R, T))
 
-def triangulate_points(corners1, corners2):
-    points_3d = []
-    for pt1, pt2 in zip(corners1, corners2):
-        pt1 = np.array(pt1, dtype=np.float32).reshape(1, 1, 2)
-        pt2 = np.array(pt2, dtype=np.float32).reshape(1, 1, 2)
+# Define the ArUco dictionary and parameters
+aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_6X6_250)
+parameters = cv2.aruco.DetectorParameters()
 
-        # Undistort points
-        pt1_undistorted = cv2.undistortPoints(pt1, mtx1, dist1, P=mtx1)
-        pt2_undistorted = cv2.undistortPoints(pt2, mtx2, dist2, P=mtx2)
+# Define the ArUco marker size (in meters)
+aruco_size = 0.065
 
-        # Triangulate
-        point_4d = cv2.triangulatePoints(proj1, proj2, pt1_undistorted, pt2_undistorted)
+# Define the 3D points of the ArUco marker corners (assuming square markers)
+aruco_corners_3d = np.array([
+    [-aruco_size / 2, -aruco_size / 2, 0],
+    [aruco_size / 2, -aruco_size / 2, 0],
+    [aruco_size / 2, aruco_size / 2, 0],
+    [-aruco_size / 2, aruco_size / 2, 0]
+], dtype=np.float32)
 
-        # Convert from homogeneous coordinates to 3D
-        point_3d = (point_4d[:3] / point_4d[3]).reshape(-1)
-        points_3d.append(point_3d)
-
-    return np.array(points_3d)
+# Scaling factor
+scale_factor = 1.22 / 0.74
 
 # Main loop for real-time detection
+cap1 = cv2.VideoCapture(1, cv2.CAP_MSMF)
+cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 3840)
+cap1.set(cv2.CAP_PROP_FRAME_HEIGHT, 2160)
+cap2 = cv2.VideoCapture(2, cv2.CAP_MSMF)
+cap2.set(cv2.CAP_PROP_FRAME_WIDTH, 3840)
+cap2.set(cv2.CAP_PROP_FRAME_HEIGHT, 2160)
+
+target_id = 4
+def average_pose(rvec1, tvec1, rvec2, tvec2):
+    # Average the translation vectors
+    tvec_avg = (tvec1 + tvec2) / 2
+
+    # Convert rotation vectors to matrices
+    R1, _ = cv2.Rodrigues(rvec1)
+    R2, _ = cv2.Rodrigues(rvec2)
+
+    # Average the rotation matrices
+    R_avg = (R1 + R2) / 2
+
+    # Ensure R_avg is a valid rotation matrix by orthogonalizing it using SVD
+    U, _, Vt = np.linalg.svd(R_avg)
+    R_avg_orthogonal = U @ Vt
+
+    # Convert the averaged rotation matrix back to a rotation vector
+    rvec_avg, _ = cv2.Rodrigues(R_avg_orthogonal)
+
+    return rvec_avg, tvec_avg
+
 while True:
     ret1, frame1 = cap1.read()
     ret2, frame2 = cap2.read()
@@ -51,36 +71,75 @@ while True:
         print("Error: Could not read frame from one or both cameras.")
         break
 
-    # Detect specific ArUco tag in both frames
-    corners1, id1 = detect_aruco(frame1, target_id)
-    corners2, id2 = detect_aruco(frame2, target_id)
+    gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
+    gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
 
-    if corners1 is not None and corners2 is not None:
-        points_3d = triangulate_points(corners1, corners2)
-        
-        print(f"Target ArUco tag detected!")
-        print(f"3D positions of corners:")
-        for i, point in enumerate(points_3d):
-            print(f"Corner {i+1}: X={point[0]:.2f}, Y={point[1]:.2f}, Z={point[2]:.2f}")
+    # Detect ArUco markers
+    detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+    corners1, ids1, _ = detector.detectMarkers(gray1)
+    corners2, ids2, _ = detector.detectMarkers(gray2)
+    pose1=None
+    pose2=None
+    if ids1 is not None and target_id in ids1.flatten():
+        idx1 = np.where(ids1.flatten() == target_id)[0][0]
+        corners1_target = corners1[idx1].reshape(-1, 2)
 
-        # Draw the detected tag corners on the frames
-        cv2.drawContours(frame1, [corners1.astype(int)], 0, (0, 255, 0), 2)
-        cv2.drawContours(frame2, [corners2.astype(int)], 0, (0, 255, 0), 2)
-        
-        # Draw corner numbers
-        for i, corner in enumerate(corners1):
-            cv2.putText(frame1, str(i+1), tuple(corner.astype(int)), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-        for i, corner in enumerate(corners2):
-            cv2.putText(frame2, str(i+1), tuple(corner.astype(int)), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+        # Estimate pose using solvePnP
+        success1, rvec1, tvec1 = cv2.solvePnP(aruco_corners_3d, corners1_target, mtx1, dist1)
 
+        if success1:
+            # Scale and adjust the position
+            tvec1 = tvec1 * scale_factor
+            
+
+            # Draw the detected marker and axes
+            cv2.aruco.drawDetectedMarkers(frame1, corners1)
+            cv2.drawFrameAxes(frame1, mtx1, dist1, rvec1, tvec1, 0.1)
+            tvec1[2] = 1.3-tvec1[2]
+            # Convert rotation vector to a rotation matrix
+            R1, _ = cv2.Rodrigues(rvec1)
+            pose_matrix1 = np.hstack((R1, tvec1))
+
+            # Print position and orientation
+            print(f"Position (Camera 1): {tvec1.flatten()}")
+            pose1=tvec1.flatten()
+            print(f"Rotation Matrix (Camera 1):\n{R1}")
+
+    if ids2 is not None and target_id in ids2.flatten():
+        idx2 = np.where(ids2.flatten() == target_id)[0][0]
+        corners2_target = corners2[idx2].reshape(-1, 2)
+
+        # Estimate pose using solvePnP
+        success2, rvec2, tvec2 = cv2.solvePnP(aruco_corners_3d, corners2_target, mtx2, dist2)
+
+        if success2:
+            # Scale and adjust the position
+            tvec2 = tvec2 * scale_factor
+
+            # Draw the detected marker and axes
+            cv2.aruco.drawDetectedMarkers(frame2, corners2)
+            cv2.drawFrameAxes(frame2, mtx2, dist2, rvec2, tvec2, 0.1)
+            tvec2[2] = 1.3-tvec2[2]
+
+            # Convert rotation vector to a rotation matrix
+            R2, _ = cv2.Rodrigues(rvec2)
+            pose_matrix2 = np.hstack((R2, tvec2))
+
+            # Print position and orientation
+            print(f"Position (Camera 2): {tvec2.flatten()}")
+            pose2=tvec2.flatten()
+            print(f"Rotation Matrix (Camera 2):\n{R2}")
+    if pose1 is not None and pose2 is not None:
+
+        rvec_avg, tvec_avg = average_pose(rvec1, tvec1, rvec2, tvec2)
+        print(f"Averaged Position:{tvec_avg.flatten()}")
+        print(f"Averaged Rotation Vector: {rvec_avg.flatten()}")
     # Display frames
     cv2.namedWindow('Camera 1', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Camera 1', 3840, 2160)  # Adjust to your screen size
+    cv2.resizeWindow('Camera 1', 3840, 2160)
     cv2.imshow('Camera 1', frame1)
     cv2.namedWindow('Camera 2', cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('Camera 2', 3840, 2160)  # Adjust to your screen size
+    cv2.resizeWindow('Camera 2', 3840, 2160)
     cv2.imshow('Camera 2', frame2)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
