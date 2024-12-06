@@ -5,7 +5,7 @@ import os
 
 # Checkerboard dimensions
 CHECKERBOARD = (10, 7)  # adjust this to match your checkerboard
-square_size = 0.025  # size of square in meters
+square_size = 0.021  # size of square in meters
 
 # Termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -21,8 +21,8 @@ imgpoints_left = []  # 2D points in image plane for left camera
 imgpoints_right = []  # 2D points in image plane for right camera
 
 # Get image files
-images_left = glob.glob('calibration_images/camera1/*.jpg')
-images_right = glob.glob('calibration_images/camera2/*.jpg')
+images_left = glob.glob('images/left/*.jpg')
+images_right = glob.glob('images/right/*.jpg')
 
 assert len(images_left) == len(images_right), "Number of left and right images don't match"
 
@@ -41,8 +41,8 @@ for i, (img_left, img_right) in enumerate(zip(images_left, images_right)):
     if ret_left and ret_right:
         objpoints.append(objp)
         # Use a smaller window size (5,5) instead of (11,11)
-        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (11, 11), (-1, -1), criteria)
-        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (11, 11), (-1, -1), criteria)
+        corners2_left = cv2.cornerSubPix(gray_left, corners_left, (4, 4), (-1, -1), criteria)
+        corners2_right = cv2.cornerSubPix(gray_right, corners_right, (4, 4), (-1, -1), criteria)
         imgpoints_left.append(corners2_left)
         imgpoints_right.append(corners2_right)
 
@@ -53,17 +53,17 @@ for i, (img_left, img_right) in enumerate(zip(images_left, images_right)):
         cv2.drawChessboardCorners(right_corners, CHECKERBOARD, corners2_right, ret_right)
 
         # Display the original images and the images with corners
-        # cv2.namedWindow('Left Image Original', cv2.WINDOW_NORMAL)
-        # cv2.resizeWindow('Left Image Original', 3840, 2160)  # Adjust to your screen size
-        # cv2.imshow('Left Image Original', left_original)
-        # cv2.namedWindow('Right Image Original', cv2.WINDOW_NORMAL)
-        # cv2.resizeWindow('Right Image Original', 3840, 2160)  # Adjust to your screen size
-        # cv2.imshow('Right Image Original', right_original)
+        cv2.namedWindow('Left Image Original', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('Left Image Original', 3840, 2160)  # Adjust to your screen size
+        cv2.imshow('Left Image Original', left_corners)
+        cv2.namedWindow('Right Image Original', cv2.WINDOW_NORMAL)
+        cv2.resizeWindow('Right Image Original', 3840, 2160)  # Adjust to your screen size
+        cv2.imshow('Right Image Original', right_corners)
         
-        cv2.imshow('Left Image Original', left_original)
-        cv2.imshow('Right Image Original', right_original)
-        cv2.imshow('Left Image Corners', left_corners)
-        cv2.imshow('Right Image Corners', right_corners)
+        # cv2.imshow('Left Image Original', left_original)
+        # cv2.imshow('Right Image Original', right_original)
+        # cv2.imshow('Left Image Corners', left_corners)
+        # cv2.imshow('Right Image Corners', right_corners)
         cv2.waitKey(500)
 
 cv2.destroyAllWindows()
@@ -130,5 +130,5 @@ calibration_data = {
     'F': fundamentalMatrix
 }
 
-np.savez('stereo_calibration.npz', **calibration_data)
+np.savez('stereo_calibration2.npz', **calibration_data)
 print("\nCalibration data saved to 'stereo_calibration.npz'")

@@ -3,7 +3,7 @@ import numpy as np
 
 # Stereo calibration parameters
 # These should be loaded from your calibration process
-calibration_data = np.load('stereo_calibration.npz')
+calibration_data = np.load('stereo_calibration2.npz')
 cam_matrix_1 = calibration_data['mtx1']
 dist_coeffs_1 = calibration_data['dist1']
 cam_matrix_2 = calibration_data['mtx2']
@@ -81,7 +81,6 @@ while True:
         print(f"3D position of the ArUco tag: {center_3D}")
     else:
         print("Marker not detected in both cameras")
-        continue
     # Display the frames
     cv2.namedWindow('Camera 1', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('Camera 1', 3840, 2160)  # Adjust to your screen size

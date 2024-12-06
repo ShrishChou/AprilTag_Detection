@@ -5,13 +5,23 @@ import numpy as np
 # Load calibration data (as before)
 intrinsics_left = np.load('intrinsics_left.npz')
 intrinsics_right = np.load('intrinsics_right.npz')
-calibration_data=np.load('stereo_calibration.npz')
+calibration_data=np.load('stereo_calibration2.npz')
 mtx1 = calibration_data['mtx1']
 dist1 = calibration_data['dist1']
 mtx2 = calibration_data['mtx2']
 dist2 = calibration_data['dist2']
 R = calibration_data['R']
 T = calibration_data['T']
+actual_distance = 0.23  # 23 cm
+calibrated_distance = 0.22  # 22 cm
+
+# Calculate the scaling factor
+scale_factor = actual_distance / calibrated_distance
+print(f"Scaling factor: {scale_factor}")
+
+# Adjust the translation vector
+T = T * scale_factor
+print(f"Scaled translation vector:\n{T}")
 # At the beginning of your script, after loading the calibration data:
 print("Calibration data:")
 print(f"Camera 1 matrix:\n{mtx1}")
@@ -68,7 +78,7 @@ def triangulate_points(corners1, corners2):
     points_3d = np.array(points_3d)
     
     # Calculate scale based on the known size of the ArUco marker
-    aruco_size = 0.065  # Adjust this to the actual size of your ArUco marker in meters
+    aruco_size = 0.062  # Adjust this to the actual size of your ArUco marker in meters
     edge_lengths = np.linalg.norm(points_3d[1:] - points_3d[:-1], axis=1)
     scale_factor = aruco_size / np.mean(edge_lengths)
     

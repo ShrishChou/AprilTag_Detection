@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 # Test Camera 1 with MSMF
+print(cv2.__version__)
 
 cap1 = cv2.VideoCapture(1) 
 cap1.set(cv2.CAP_PROP_FRAME_WIDTH, 3840)
@@ -81,10 +82,10 @@ while True:
     cv2.resizeWindow('Camera 2', 3840, 2160)  # Adjust to your screen size
     cv2.imshow('Camera 2', frame2)
     if cv2.waitKey(1) & 0xFF == ord('a'):
-        filename1 = 'calibration_images/camera1/left'+str(rightcount)+'.jpg'
+        filename1 = 'images/left/'+str(rightcount)+'.jpg'
         cv2.imwrite(filename1, frame1) 
         rightcount+=1
-        filename2 = 'calibration_images/camera2/right'+str(leftcount)+'.jpg'
+        filename2 = 'images/right/'+str(leftcount)+'.jpg'
         cv2.imwrite(filename2, frame2) 
         leftcount+=1
     # if cv2.waitKey(1) & 0xFF == ord('b'):

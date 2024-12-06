@@ -124,6 +124,6 @@ if len(objpoints) > 0 and len(imgpoints) > 0:
 else:
     print("Not enough valid image points for calibration.")
 # np.savez('intrinsics_left.npz', mtx_left=mtx, dist_left=dist)
-np.savez('intrinsics_right.npz', mtx_right=mtx, dist_right=dist)
+# np.savez('intrinsics_right.npz', mtx_right=mtx, dist_right=dist)
 images1 = glob.glob('calibration_images/camera1/*.jpg')
 images2 = glob.glob('calibration_images/camera2/*.jpg')

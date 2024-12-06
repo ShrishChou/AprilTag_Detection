@@ -127,7 +127,7 @@ class RobotMain(object):
             self._tcp_acc = 5000
             t1 = time.monotonic()
 
-            code=self._arm.set_servo_angle(angle=[0,0,0,0,0,-90,0],is_radian=False)
+            code=self._arm.set_servo_angle(angle=[180,0,-180,0,0,-90,0],is_radian=False)
             if not self._check_code(code, 'set_servo_angle'):
                 return
             
@@ -181,7 +181,7 @@ def pickup(self,coor):
     code = self._arm.set_position_aa(coor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
     if not self._check_code(code, 'set_position'):
         return
-    code = self._arm.set_gripper_position(150, wait=True, speed=5000, auto_enable=True)
+    code = self._arm.set_gripper_position(40, wait=True, speed=5000, auto_enable=True)
     if not self._check_code(code, 'set_gripper_position'):
         return
     code = self._arm.set_position_aa(highcoor,is_radian=False, speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=True)
